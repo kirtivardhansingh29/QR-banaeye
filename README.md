@@ -3,6 +3,8 @@
 A sleek, high-performance QR code generator built with React and Tailwind CSS. 
 Designed to be "lovable" through instant feedback and deep customization.
 
+here the deployed link {https://qrbanayeyjov.vercel.app/}
+
 ## ✨ Features
 * **Real-time Generation:** Watch the QR change as you type.
 * **Branding:** Upload your logo to the center of the QR.
