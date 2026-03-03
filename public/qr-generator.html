@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Generator</title>
+  <meta name="description" content="Generate custom QR codes with your brand colors and logo. Download or copy instantly." />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: hsl(220, 20%, 7%);
+      --fg: hsl(210, 20%, 92%);
+      --card: hsl(220, 18%, 10%);
+      --primary: hsl(160, 84%, 50%);
+      --primary-fg: hsl(220, 20%, 7%);
+      --accent: hsl(190, 70%, 50%);
+      --muted: hsl(220, 14%, 14%);
+      --muted-fg: hsl(215, 12%, 50%);
+      --border: hsl(220, 14%, 18%);
+      --surface-grad: linear-gradient(145deg, hsl(220, 18%, 12%), hsl(220, 18%, 8%));
+      --glow: 0 0 20px hsla(160, 84%, 50%, 0.3);
+      --radius: 0.75rem;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .wrapper { width: 100%; max-width: 56rem; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 2.5rem; }
+    .header-icon {
+      display: inline-flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+    }
+    .icon-box {
+      padding: 0.625rem; border-radius: 0.75rem;
+      background: hsla(160, 84%, 50%, 0.1);
+      border: 1px solid hsla(160, 84%, 50%, 0.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon-box svg { width: 28px; height: 28px; color: var(--primary); }
+    .header h1 { font-size: clamp(1.875rem, 4vw, 2.25rem); font-weight: 700; letter-spacing: -0.025em; }
+    .text-gradient {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { color: var(--muted-fg); font-size: 0.875rem; max-width: 28rem; margin: 0 auto; }
+
+    /* Grid */
+    .grid {
+      display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start;
+    }
+    @media (min-width: 768px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .panel-controls { order: 1; }
+      .panel-display { order: 2; }
+    }
+
+    .panel {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 1rem; padding: 1.5rem;
+    }
+    .panel-title {
+      font-size: 0.75rem; font-weight: 600; color: var(--muted-fg);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.25rem;
+    }
+
+    /* Controls */
+    .field { margin-bottom: 1.5rem; }
+    .field:last-child { margin-bottom: 0; }
+    .label {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--fg);
+    }
+    .label svg { width: 16px; height: 16px; color: var(--primary); }
+    .label svg.accent-icon { color: var(--accent); }
+
+    input[type="text"] {
+      width: 100%; padding: 0.625rem 0.75rem;
+      background: var(--muted); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--fg);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]::placeholder { color: var(--muted-fg); }
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px hsla(160, 84%, 50%, 0.15);
+    }
+
+    .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .color-picker {
+      display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem;
+    }
+    input[type="color"] {
+      width: 2.5rem; height: 2.5rem; border-radius: 0.5rem;
+      border: 1px solid var(--border); cursor: pointer;
+      background: transparent; padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+    input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: none; }
+    .color-hex { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted-fg); text-transform: uppercase; }
+
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 0.5rem;
+      padding: 1rem; text-align: center; cursor: pointer;
+      transition: border-color 0.2s; font-size: 0.875rem; color: var(--muted-fg);
+    }
+    .upload-zone:hover { border-color: hsla(160, 84%, 50%, 0.5); }
+    .upload-zone img { width: 2.5rem; height: 2.5rem; border-radius: 0.25rem; object-fit: contain; }
+    .upload-preview { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+    #fileInput { display: none; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0.625rem 1rem; border-radius: var(--radius);
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+      gap: 0.5rem;
+    }
+    .btn svg { width: 18px; height: 18px; }
+    .btn-primary {
+      background: var(--primary); color: var(--primary-fg);
+      box-shadow: var(--glow);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-outline {
+      background: transparent; color: var(--fg);
+      border-color: var(--border);
+    }
+    .btn-outline:hover { border-color: hsla(160, 84%, 50%, 0.5); }
+    .btn-reset {
+      width: 100%; background: transparent; color: var(--muted-fg);
+      border-color: var(--border);
+    }
+    .btn-reset:hover { color: var(--fg); border-color: hsla(160, 84%, 50%, 0.5); }
+
+    /* Display */
+    .qr-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 1.5rem;
+    }
+    .qr-surface {
+      background: var(--surface-grad); border-radius: 1rem;
+      padding: 2rem; border: 1px solid var(--border);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px hsla(160, 84%, 50%, 0.2); }
+      50% { box-shadow: 0 0 30px hsla(160, 84%, 50%, 0.4); }
+    }
+    .qr-canvas-wrap { border-radius: 0.75rem; overflow: hidden; line-height: 0; }
+    .actions { display: flex; gap: 0.75rem; width: 100%; }
+    .actions .btn { flex: 1; }
+    .info {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+      color: var(--muted-fg); text-align: center;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.75rem 1.25rem;
+      color: var(--fg); font-size: 0.875rem; font-weight: 500;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      transform: translateY(120%); opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 100;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-desc { font-size: 0.75rem; color: var(--muted-fg); margin-top: 0.125rem; }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">
+      <div class="icon-box">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+      </div>
+      <h1><span class="text-gradient">QR</span> Generator</h1>
+    </div>
+    <p>Generate custom QR codes with your brand colors and logo. Download or copy instantly.</p>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid">
+    <!-- Controls -->
+    <div class="panel panel-controls">
+      <div class="panel-title">Customize</div>
+
+      <div class="field">
+        <label class="label">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          URL or Text
+        </label>
+        <input type="text" id="urlInput" value="https://lovable.dev" placeholder="https://example.com" />
+      </div>
+
+      <div class="field">
+        <div class="color-row">
+          <div>
+            <label class="label">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              Foreground
+            </label>
+            <div class="color-picker">
+              <input type="color" id="fgColor" value="#00e68a" />
+              <span class="color-hex" id="fgHex">#00e68a</span>
+            </div>
+          </div>
+          <div>
+            <label class="label">
+              <svg class="accent-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              Background
+            </label>
+            <div class="color-picker">
+              <input type="color" id="bgColor" value="#111827" />
+              <span class="color-hex" id="bgHex">#111827</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          Logo (optional)
+        </label>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <span id="uploadText">Click to upload a logo</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
+
+      <button class="btn btn-reset" onclick="resetDefaults()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset to Defaults
+      </button>
+    </div>
+
+    <!-- Display -->
+    <div class="panel panel-display">
+      <div class="panel-title">Preview</div>
+      <div class="qr-wrap">
+        <div class="qr-surface">
+          <div class="qr-canvas-wrap">
+            <canvas id="qrCanvas" width="240" height="240"></canvas>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="downloadQR()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Download
+          </button>
+          <button class="btn btn-outline" id="copyBtn" onclick="copyQR()">
+            <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span id="copyText">Copy</span>
+          </button>
+        </div>
+        <p class="info">Error correction: High (H) · Format: PNG</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div id="toastTitle"></div>
+  <div class="toast-desc" id="toastDesc"></div>
+</div>
+
+<script>
+  const DEFAULTS = { url: 'https://lovable.dev', fg: '#00e68a', bg: '#111827' };
+  let logoImg = null;
+  let logoUrl = null;
+
+  const $ = id => document.getElementById(id);
+
+  function showToast(title, desc) {
+    $('toastTitle').textContent = title;
+    $('toastDesc').textContent = desc;
+    $('toast').classList.add('show');
+    setTimeout(() => $('toast').classList.remove('show'), 2500);
+  }
+
+  function generateQR() {
+    const url = $('urlInput').value || DEFAULTS.url;
+    const fg = $('fgColor').value;
+    const bg = $('bgColor').value;
+    const canvas = $('qrCanvas');
+
+    QRCode.toCanvas(canvas, url, {
+      width: 240,
+      margin: 1,
+      color: { dark: fg, light: bg },
+      errorCorrectionLevel: 'H'
+    }, function(err) {
+      if (err) return console.error(err);
+      if (logoImg) drawLogo(canvas);
+    });
+  }
+
+  function drawLogo(canvas) {
+    const ctx = canvas.getContext('2d');
+    const size = 40;
+    const x = (canvas.width - size) / 2;
+    const y = (canvas.height - size) / 2;
+    // Clear center area
+    ctx.fillStyle = $('bgColor').value;
+    ctx.fillRect(x - 4, y - 4, size + 8, size + 8);
+    ctx.drawImage(logoImg, x, y, size, size);
+  }
+
+  // Event listeners
+  $('urlInput').addEventListener('input', generateQR);
+  $('fgColor').addEventListener('input', e => { $('fgHex').textContent = e.target.value; generateQR(); });
+  $('bgColor').addEventListener('input', e => { $('bgHex').textContent = e.target.value; generateQR(); });
+
+  $('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (logoUrl) URL.revokeObjectURL(logoUrl);
+    logoUrl = URL.createObjectURL(file);
+    logoImg = new Image();
+    logoImg.onload = () => {
+      $('uploadZone').innerHTML = '<div class="upload-preview"><img src="' + logoUrl + '" alt="Logo" /><span>Click to change</span></div>';
+      generateQR();
+    };
+    logoImg.src = logoUrl;
+  });
+
+  function resetDefaults() {
+    $('urlInput').value = DEFAULTS.url;
+    $('fgColor').value = DEFAULTS.fg;
+    $('bgColor').value = DEFAULTS.bg;
+    $('fgHex').textContent = DEFAULTS.fg;
+    $('bgHex').textContent = DEFAULTS.bg;
+    if (logoUrl) URL.revokeObjectURL(logoUrl);
+    logoImg = null; logoUrl = null;
+    $('uploadZone').innerHTML = '<span>Click to upload a logo</span>';
+    $('fileInput').value = '';
+    generateQR();
+  }
+
+  function downloadQR() {
+    const canvas = $('qrCanvas');
+    const link = document.createElement('a');
+    link.download = 'qr-code.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Downloaded!', 'QR code saved as PNG.');
+  }
+
+  async function copyQR() {
+    const canvas = $('qrCanvas');
+    try {
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (blob) {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        $('copyText').textContent = 'Copied!';
+        showToast('Copied!', 'QR code copied to clipboard.');
+        setTimeout(() => { $('copyText').textContent = 'Copy'; }, 2000);
+      }
+    } catch {
+      showToast('Error', 'Could not copy to clipboard.');
+    }
+  }
+
+  // Initial render
+  generateQR();
+</script>
+
+</body>
+</html>
